@@ -1,1 +1,1 @@
-# java_sandbox
+personal repo for educational purposes
