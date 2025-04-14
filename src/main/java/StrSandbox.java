@@ -1,4 +1,7 @@
+import java.nio.charset.StandardCharsets;
+
 public final class StrSandbox {
+
     private static final short MAX_ROWS = 300;
     private static final short MAX_COLUMNS = 450;
     private static final byte PATTERN_MAX_LENGTH = 4;
@@ -8,7 +11,6 @@ public final class StrSandbox {
     private static final String DEFAULT_PATTERN = STR."\{DEFAULT_SEPARATOR_SYMBOL}\{DEFAULT_GRID_SYMBOL}";
     private static final char DEFAULT_GRID_CHAR = 'O';
     private static final char DEFAULT_SEPARATOR_CHAR = ' ';
-
 
     /**
      * Draws a grid of '{@value DEFAULT_GRID_CHAR}' characters separated by '{@value DEFAULT_SEPARATOR_CHAR}' in the
@@ -79,5 +81,62 @@ public final class StrSandbox {
             System.out.print(isEvenColumn && useEvenOffset ? gridStrOffset : gridStr);
         }
         System.out.println();
+    }
+
+    private static final int INDEX_OF_A = "A".toCharArray()[0];
+    private static final int INDEX_OF_Z = "Z".toCharArray()[0];
+    private static final int ALPHABET_LEN = INDEX_OF_Z - INDEX_OF_A;
+
+    /**
+     * Returns the Latin alphabet in either upper- or lower case.
+     * @param   inUpperCase
+     * @return  String
+     */
+    public static String getLatinLetters(boolean inUpperCase){
+        final int lowerCaseOffset = 32;
+        StringBuilder sb = new StringBuilder();
+        for(int i = INDEX_OF_A; i < INDEX_OF_A + ALPHABET_LEN; i++){
+            int charIndex = inUpperCase ? i : (i + lowerCaseOffset);
+            sb.append((char) charIndex);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Returns true of b is less than {@value INDEX_OF_A} or bigger than {@value INDEX_OF_Z}.
+     * @param b
+     * @return  boolean
+     */
+    private static boolean isUpperCaseByteCode(byte b){ return !(b < INDEX_OF_A || b > INDEX_OF_Z); }
+
+    /**
+     * Takes a String and will encode it with a key using the Caesar cipher.
+     * @param message   Message that will be encoded
+     * @param key       Key used to encode the message
+     * @return          Encoded message as String
+     */
+    public static String encodeCaesarCipher(String message, int key){
+        if (message == null) {
+            System.out.println("Message must not be null!");
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        for(byte b : message.toUpperCase().getBytes(StandardCharsets.UTF_8)){
+            int shiftedByteCode = INDEX_OF_A + Math.floorMod(b - INDEX_OF_A + key, ALPHABET_LEN);
+            int byteCode = StrSandbox.isUpperCaseByteCode(b) ? shiftedByteCode : b;
+            sb.append((char) byteCode);
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Takes an encoded String and will decode it with a key using the Caesar cipher.
+     * @param encodedMessage Encoded message that will be decoded
+     * @param key            Key used to decode the message
+     * @return               Decoded message as String
+     */
+    public static String decodeCaesarCipher(String encodedMessage, int key){
+        return encodeCaesarCipher(encodedMessage, key * -1);
     }
 }
