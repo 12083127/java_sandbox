@@ -86,6 +86,7 @@ public final class StrSandbox {
     private static final int INDEX_OF_A = "A".toCharArray()[0];
     private static final int INDEX_OF_Z = "Z".toCharArray()[0];
     private static final int ALPHABET_LEN = INDEX_OF_Z - INDEX_OF_A + 1;
+    private static final int LOWERCASE_OFFSET = 32;
 
     /**
      * Returns the Latin alphabet in either upper- or lower case.
@@ -93,10 +94,9 @@ public final class StrSandbox {
      * @return  String
      */
     public static String getLatinLetters(boolean inUpperCase){
-        final int lowerCaseOffset = 32;
         StringBuilder sb = new StringBuilder();
         for(int i = INDEX_OF_A; i < INDEX_OF_A + ALPHABET_LEN; i++){
-            int charIndex = inUpperCase ? i : (i + lowerCaseOffset);
+            int charIndex = inUpperCase ? i : (i + LOWERCASE_OFFSET);
             sb.append((char) charIndex);
         }
         return sb.toString();
