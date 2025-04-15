@@ -169,4 +169,49 @@ public final class StrSandbox {
     public static String decodeCaesarCipher(String encodedMessage, int key){
         return encodeCaesarCipher(encodedMessage, key * -1);
     }
+
+    private static final char ENC_DECIMAL_SEPARATOR = '-';
+
+    /**
+     * The goal is to encode letters and digits in decimal separated by '{@value ENC_DECIMAL_SEPARATOR}'. Other chars are
+     * kept unchanged. "A" starts out at index 1, "B" = 2 etc. Lower case indices start at index 27.
+     * Numbers start at index 53 with digit '0'.
+     * @param message           message to be encoded
+     * @param includeLowerCase  encode lower case or treat every letter as upper case
+     * @return                  Encoded String
+     */
+    public static String encodeDecimal(String message, boolean includeLowerCase){
+        if (message == null) {
+            System.out.println("Message must not be null!");
+            return "";
+        }
+
+        int i = 0;
+        StringBuilder sb = new StringBuilder();
+        final String msg = includeLowerCase ? message : message.toUpperCase();
+        for(byte b : msg.getBytes(StandardCharsets.UTF_8)){
+            String str = "";
+            if (isLatinLetter(b)){
+                int initialOffset = b - INDEX_OF_A + 1;
+                int shiftedB = isUpperCaseLetter(b) ? initialOffset : initialOffset - LOWERCASE_OFFSET + ALPHABET_LEN;
+                str = shiftedB < 10 ? STR."0\{shiftedB}" : Integer.toString(shiftedB);
+                if (i < msg.length() - 1) {
+                    char nextChar = msg.charAt(i + 1);
+                    str = isLatinLetter(nextChar) || isDigit(nextChar)? STR."\{str}\{ENC_DECIMAL_SEPARATOR}" : str;
+                }
+            } else if (isDigit(msg.charAt(i))) {
+                int initialOffset = b - 48 + 1 + ALPHABET_LEN * 2;
+                str = STR."\{initialOffset + Integer.parseInt(Character.toString(msg.charAt(i)))}";
+                if (i < msg.length() - 1) {
+                    char nextChar = msg.charAt(i + 1);
+                    str = isLatinLetter(nextChar) || isDigit(nextChar) ? STR."\{str}\{ENC_DECIMAL_SEPARATOR}" : str;
+                }
+            } else {
+                str = STR."\{(char) b}";
+            }
+            sb.append(str);
+            i++;
+        }
+        return sb.toString();
+    }
 }
