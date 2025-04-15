@@ -103,11 +103,41 @@ public final class StrSandbox {
     }
 
     /**
-     * Returns true of b is less than 'A' or bigger than 'Z'.
+     * Returns true if b is between 'A' or 'Z'.
      * @param b
      * @return  boolean
      */
-    private static boolean isUpperCaseByteCode(byte b){ return !(b < INDEX_OF_A || b > INDEX_OF_Z); }
+    public static boolean isUpperCaseLetter(byte b){ return !(b < INDEX_OF_A || b > INDEX_OF_Z); }
+    /**
+     * Returns true if c is between 'A' or 'Z'.
+     * @param c
+     * @return  boolean
+     */
+    public static boolean isUpperCaseLetter(char c) { return Character.toString(c).matches("[A-Z]"); }
+
+    /**
+     * Returns true if b is between 'a' or 'z'.
+     * @param b
+     * @return  boolean
+     */
+    public static boolean isLowerCaseLetter(byte b){
+        final int indexOfLowerCaseA = INDEX_OF_A + LOWERCASE_OFFSET;
+        final int indexOfLowerCaseZ = INDEX_OF_Z + LOWERCASE_OFFSET;
+        return !(b < indexOfLowerCaseA || b > indexOfLowerCaseZ);
+    }
+    /**
+     * Returns true if c is between 'a' or 'z'.
+     * @param c
+     * @return  boolean
+     */
+    public static boolean isLowerCaseLetter(char c){ return Character.toString(c).matches("[a-z]"); }
+
+    public static boolean isLatinLetter(byte b){ return (isUpperCaseLetter(b) || isLowerCaseLetter(b)); }
+
+    public static boolean isLatinLetter(char c){ return Character.toString(c).matches("[A-z]"); }
+
+    public static boolean isDigit(char c){ return Character.toString(c).matches("[0-9]"); }
+
 
     /**
      * Takes a String and will encode it with a key using the Caesar cipher.
@@ -124,7 +154,7 @@ public final class StrSandbox {
         StringBuilder sb = new StringBuilder();
         for(byte b : message.toUpperCase().getBytes(StandardCharsets.UTF_8)){
             int shiftedByteCode = INDEX_OF_A + Math.floorMod(b - INDEX_OF_A + key, ALPHABET_LEN);
-            int byteCode = StrSandbox.isUpperCaseByteCode(b) ? shiftedByteCode : b;
+            int byteCode = isUpperCaseLetter(b) ? shiftedByteCode : b;
             sb.append((char) byteCode);
         }
         return sb.toString();
