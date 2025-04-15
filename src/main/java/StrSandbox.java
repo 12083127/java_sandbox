@@ -103,7 +103,7 @@ public final class StrSandbox {
     }
 
     /**
-     * Returns true of b is less than {@value INDEX_OF_A} or bigger than {@value INDEX_OF_Z}.
+     * Returns true of b is less than 'A' or bigger than 'Z'.
      * @param b
      * @return  boolean
      */
