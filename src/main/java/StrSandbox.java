@@ -21,6 +21,7 @@ public final class StrSandbox {
     public static void drawGrid (int rows, int columns){
         drawGrid(rows, columns, DEFAULT_GRID_CHAR, DEFAULT_SEPARATOR_CHAR, DEFAULT_PATTERN, false);
     }
+
     /**
      * Draws a grid of user-defined characters in the terminal.
      *@param rows           number of rows. Clamps at {@value MAX_ROWS}
@@ -90,7 +91,7 @@ public final class StrSandbox {
 
     /**
      * Returns the Latin alphabet in either upper- or lower case.
-     * @param   inUpperCase
+     * @param   inUpperCase If true, prints alphabet in upper case
      * @return  String
      */
     public static String getLatinLetters(boolean inUpperCase){
@@ -103,21 +104,22 @@ public final class StrSandbox {
     }
 
     /**
-     * Returns true if b is between 'A' or 'Z'.
-     * @param b
+     * Returns true if b is between 'A' and 'Z'.
+     * @param b byte to check against
      * @return  boolean
      */
     public static boolean isUpperCaseLetter(byte b){ return !(b < INDEX_OF_A || b > INDEX_OF_Z); }
+
     /**
-     * Returns true if c is between 'A' or 'Z'.
-     * @param c
+     * Returns true if c is between 'A' and 'Z'.
+     * @param c char to check against
      * @return  boolean
      */
     public static boolean isUpperCaseLetter(char c) { return Character.toString(c).matches("[A-Z]"); }
 
     /**
-     * Returns true if b is between 'a' or 'z'.
-     * @param b
+     * Returns true if b is between 'a' and 'z'.
+     * @param b byte to check against
      * @return  boolean
      */
     public static boolean isLowerCaseLetter(byte b){
@@ -125,19 +127,34 @@ public final class StrSandbox {
         final int indexOfLowerCaseZ = INDEX_OF_Z + LOWERCASE_OFFSET;
         return !(b < indexOfLowerCaseA || b > indexOfLowerCaseZ);
     }
+
     /**
-     * Returns true if c is between 'a' or 'z'.
-     * @param c
+     * Returns true if c is between 'a' and 'z'.
+     * @param c byte to check
      * @return  boolean
      */
     public static boolean isLowerCaseLetter(char c){ return Character.toString(c).matches("[a-z]"); }
 
+    /**
+     * Returns true if b is between either an upper- or lower case Latin letter.
+     * @param  b byte to check against
+     * @return   boolean
+     */
     public static boolean isLatinLetter(byte b){ return (isUpperCaseLetter(b) || isLowerCaseLetter(b)); }
 
+    /**
+     * Returns true if c is between either an upper- or lower case Latin letter.
+     * @param  c char to check against
+     * @return   boolean
+     */
     public static boolean isLatinLetter(char c){ return Character.toString(c).matches("[A-z]"); }
 
+    /**
+     * Returns true if c is between '0' and '9'.
+     * @param  c char to check against
+     * @return   boolean
+     */
     public static boolean isDigit(char c){ return Character.toString(c).matches("[0-9]"); }
-
 
     /**
      * Takes a String and will encode it with a key using the Caesar cipher.
