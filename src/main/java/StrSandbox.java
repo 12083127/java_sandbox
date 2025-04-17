@@ -203,31 +203,33 @@ public final class StrSandbox {
             return "";
         }
 
-        int i = 0;
         StringBuilder sb = new StringBuilder();
         final String msg = includeLowerCase ? message : message.toUpperCase();
-        for(byte b : msg.getBytes(StandardCharsets.UTF_8)){
+        final byte[] bmsg = msg.getBytes(StandardCharsets.UTF_8);
+        for(int i = 0; i < bmsg.length; i++){
             String str = "";
-            if (isLatinLetter(b)){
-                int initialOffset = b - INDEX_OF_A + 1;
-                int shiftedB = isUpperCaseLetter(b) ? initialOffset : initialOffset - LOWERCASE_OFFSET + ALPHABET_LEN;
-                str = shiftedB < 10 ? STR."0\{shiftedB}" : Integer.toString(shiftedB);
-                if (i < msg.length() - 1) {
-                    char nextChar = msg.charAt(i + 1);
-                    str = isLatinLetter(nextChar) || isDigit(nextChar)? STR."\{str}\{ENC_DECIMAL_SEPARATOR}" : str;
-                }
-            } else if (isDigit(msg.charAt(i))) {
-                int initialOffset = b - 48 + 1 + ALPHABET_LEN * 2;
-                str = STR."\{initialOffset + Integer.parseInt(Character.toString(msg.charAt(i)))}";
-                if (i < msg.length() - 1) {
-                    char nextChar = msg.charAt(i + 1);
-                    str = isLatinLetter(nextChar) || isDigit(nextChar) ? STR."\{str}\{ENC_DECIMAL_SEPARATOR}" : str;
-                }
-            } else {
-                str = STR."\{(char) b}";
+            final char currentChar = (char) bmsg[i];
+            // handle non letters/digits and exit iteration early
+            if(!(isLatinLetter(currentChar) || isDigit(currentChar))){
+                sb.append(Character.toString(currentChar));
+                continue;
             }
+            // handle letters/digits
+            if (isLatinLetter(currentChar)){
+                int initialOffset = currentChar - INDEX_OF_A + 1;
+                int shiftedB = isUpperCaseLetter(currentChar) ? initialOffset : initialOffset - LOWERCASE_OFFSET + ALPHABET_LEN;
+                str = shiftedB < 10 ? STR."0\{shiftedB}" : Integer.toString(shiftedB);
+            } else if (isDigit(currentChar)) {
+                int initialOffset = currentChar - 48 + 1 + ALPHABET_LEN * 2;
+                str = STR."\{initialOffset + Integer.parseInt(Character.toString(currentChar))}";
+            }
+            // check if next char exists and append separator if necessary
+            if (i < msg.length() - 1) {
+                char nextChar = msg.charAt(i + 1);
+                str = isLatinLetter(nextChar) || isDigit(nextChar) ? STR."\{str}\{ENC_DECIMAL_SEPARATOR}" : str;
+            }
+
             sb.append(str);
-            i++;
         }
         return sb.toString();
     }
