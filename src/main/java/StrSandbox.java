@@ -157,6 +157,62 @@ public final class StrSandbox {
     public static boolean isDigit(char c){ return Character.toString(c).matches("[0-9]"); }
 
     /**
+     * Recursive helper method for wrapAt().
+     * @param str   String to wrap
+     * @param sb    StringBuilder Object used to assemble the new String
+     * @param index length at which the method tries to wrap the String
+     * @see #wrapAt(String, int)
+     */
+    private static void wrapAtHelper(String str, StringBuilder sb, int index){
+        int i = Math.abs(index);
+
+        if(str == null || sb == null){
+            System.out.println("Str must not be null");
+            return;
+        }
+        if(i > str.length()){
+            sb.append(str);
+            return;
+        }
+        // parse str backwards starting at index position to check where the nearest white space is
+        while( i != 0) {
+            char currentChar = str.charAt(i);
+            boolean isWhiteSpace = Character.toString(currentChar).matches("\\s");
+            if(isWhiteSpace){
+                sb.append(STR."\{str.substring(0, i + 1)}\n");
+                break;
+            }
+            i--;
+        }
+        // try to append a whole word, if we were unable to find a white space
+        boolean noWhiteSpaceFound = i == 0 && !Character.toString(str.charAt(i)).matches("\\s");
+        if (noWhiteSpaceFound){
+            String word = str.split("\\s")[0];
+            sb.append(STR."\{word}\n");
+            i = word.length();
+            // exit if this seems to be the last piece of String available
+            if (i >= str.substring(i).length()){
+                return;
+            }
+        }
+        // call recursively until there is no string left
+        wrapAtHelper(str.substring(i + 1), sb, index);
+    }
+
+    /**
+     * Wraps a String by inserting '\n' at the length given by the index parameter. If length specified is too short,
+     * it will wrap after the next word.
+     * @param str   String to wrap
+     * @param index length at which the method tries to wrap the String
+     * @return      Reformatted String
+     */
+    public static String wrapAt(String str, int index){
+        StringBuilder sb = new StringBuilder();
+        wrapAtHelper(str, sb, index);
+        return sb.toString();
+    }
+
+    /**
      * Takes a String and will encode it with a key using the Caesar cipher.
      * @param message   Message that will be encoded
      * @param key       Key used to encode the message
