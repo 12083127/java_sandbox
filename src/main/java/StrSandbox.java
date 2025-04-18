@@ -289,4 +289,39 @@ public final class StrSandbox {
         }
         return sb.toString();
     }
+
+    /**
+     * Decodes a previously decimal encoded message to clear text.
+     * @param encodedMessage    Encoded message to be decoded
+     * @return      Decoded String
+     * @see #encodeDecimal(String, boolean)
+     */
+    public static String decodeDecimal(String encodedMessage){
+        StringBuilder sb = new StringBuilder();
+        String[] elements = encodedMessage.splitWithDelimiters("\\d{2}", -1);
+        for(String e : elements){
+            if(e.equals("-")){
+                continue;
+            }
+
+            boolean isDecimalPattern = e.matches("\\d{2}");
+            if (!isDecimalPattern){
+                sb.append(e);
+            }
+            else{
+                int decimal = Integer.parseInt(e);
+                int index = decimal;
+                if(decimal < 27){
+                    index = INDEX_OF_A + decimal - 1;
+                } else if (decimal < 53) {
+                    index = INDEX_OF_A + LOWERCASE_OFFSET + (decimal - ALPHABET_LEN - 1);
+                } else if (decimal < 63) {
+                    index = 48 + decimal - 1 - ALPHABET_LEN * 2;
+                }
+
+                sb.append((char) index);
+            }
+        }
+        return sb.toString();
+    }
 }
