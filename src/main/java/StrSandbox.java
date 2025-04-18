@@ -147,7 +147,7 @@ public final class StrSandbox {
      * @param  c char to check against
      * @return   boolean
      */
-    public static boolean isLatinLetter(char c){ return Character.toString(c).matches("[A-z]"); }
+    public static boolean isLatinLetter(char c){ return Character.toString(c).matches("[A-Z]|[a-z]"); }
 
     /**
      * Returns true if c is between '0' and '9'.
@@ -277,7 +277,7 @@ public final class StrSandbox {
                 str = shiftedB < 10 ? STR."0\{shiftedB}" : Integer.toString(shiftedB);
             } else if (isDigit(currentChar)) {
                 int initialOffset = currentChar - 48 + 1 + ALPHABET_LEN * 2;
-                str = STR."\{initialOffset + Integer.parseInt(Character.toString(currentChar))}";
+                str = STR."\{initialOffset}";
             }
             // check if next char exists and append separator if necessary
             if (i < msg.length() - 1) {
