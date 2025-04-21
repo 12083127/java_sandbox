@@ -1,3 +1,5 @@
+package strings;
+
 import java.nio.charset.StandardCharsets;
 
 public final class StrSandbox {
