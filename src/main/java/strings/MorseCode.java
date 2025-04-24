@@ -26,6 +26,10 @@ public class MorseCode {
         }
     }
 
+    /**
+     * Returns the stored Morse code message as clear text.
+     * @return String as clear text.
+     */
     public String getClearText() {
         StringBuilder sb = new StringBuilder();
         for (MorseNotation mn : literals) {
@@ -34,11 +38,120 @@ public class MorseCode {
         return sb.toString();
     }
 
+    /**
+     * Decodes a given {@code morseCode} String and will return a clear text as a String.
+     * @param   morseCode The String that is decoded. Has to be in Morse code or Morse Signal notation.
+     * @return  String as clear text.
+     */
     public static String decode(String morseCode){
-        return "";
+        if (morseCode == null) {
+            System.out.println("\u001B[31m String object 'morseCode' must not be null\u001B[0m");
+            return "";
+        }
+
+        String firstChar = Character.toString(morseCode.trim().charAt(0));
+        // check if the message is an actual Morse code
+        String regEx =  STR."\{MorseNotation.SIGNAL_MARK}|\{MorseNotation.SIGNAL_GAP}|" +
+                        STR."\{MorseNotation.SHORT_MARK}|\{MorseNotation.LONG_MARK}";
+        boolean isMorseCode = firstChar.matches(regEx);
+
+        if(!isMorseCode){
+            System.out.println("\u001B[33m String object 'morseCode' is not a valid Morse Code\u001B[0m");
+            return "";
+        }
+
+        // check if it's in signal or morse notation
+        regEx = STR."\{MorseNotation.SIGNAL_MARK}|\{MorseNotation.SIGNAL_GAP}";
+        boolean isSignalSequence = firstChar.matches(regEx);
+
+        return isSignalSequence ? decodeSignalString(morseCode) : decodeMorseString(morseCode);
     }
 
+    private static String decodeMorseString(String morseCode){
+        String splitRegEx = " |\r|\n";
+        String[] splits = morseCode.splitWithDelimiters(splitRegEx, -1);
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < splits.length; i++) {
+            String current = splits[i];
+
+            if(current.isEmpty()) continue;
+
+            if(current.equals("\r") || current.equals("\n")){
+                sb.append(current);
+                continue;
+            }
+
+            if(current.equals(" ")){
+                // check for triple white space sequence to convert to one white space,
+                // otherwise just append an empty String to ignore the current array entry
+                if (i + 5 < splits.length){
+                    // checks the next four entries in array for sequence ["", " ", "", " "]
+                    boolean isTripleWS = true;
+                    for(int j = 1; j < 5; j++){
+                        isTripleWS &= j % 2 == 0 ? splits[i+j].equals(" ") : splits[i+j].isEmpty();
+                    }
+
+                    if (isTripleWS) {
+                        sb.append(" ");
+                        i += 4;
+                    }
+                }
+                continue;
+            }
+
+            current = current.replace(STR."\{MorseNotation.SHORT_MARK}", ".");
+            current = current.replace(STR."\{MorseNotation.LONG_MARK}", "_");
+            MorseNotation mc = MorseNotation.search(current, false);
+            if (MorseNotation.isValid(mc)) {
+                sb.append(mc.literal);
+            } else {
+                System.out.println(STR."\u001B[33m No valid character conversion found for String '\{current}'\u001B[0m");
+            }
+        }
+        return sb.toString();
+    }
+
+    private static String decodeSignalString(String morseCode){
+        String splitRegEx = STR."\{MorseNotation.SIGNAL_WORD_GAP}|\{MorseNotation.SIGNAL_LETTER_GAP}|\r|\n";
+        String[] splits = morseCode.splitWithDelimiters(splitRegEx, -1);
+        StringBuilder sb = new StringBuilder();
+        for(String string : splits){
+            if(string.equals(MorseNotation.SIGNAL_LETTER_GAP) || string.isEmpty()) continue;
+
+            if(string.equals(MorseNotation.SIGNAL_WORD_GAP)){
+                sb.append(" ");
+                continue;
+            }
+
+            if(string.matches("\r|\n")){
+                sb.append(string);
+                continue;
+            }
+
+            string = string.replaceAll(MorseNotation.SIGNAL_LONG_MARK, "_");
+            string = string.replaceAll(MorseNotation.SIGNAL_SHORT_MARK, ".");
+            string = string.replaceAll(Character.toString(MorseNotation.SIGNAL_GAP), "");
+            MorseNotation mc = MorseNotation.search(string, false);
+            if (MorseNotation.isValid(mc)) {
+                sb.append(mc.literal);
+            } else {
+                System.out.println(STR."\u001B[33m No valid character conversion found for String '\{string}'\u001B[0m");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Returns the stored message in Morse code notation.
+     * @return  String
+     */
     public String getNotation(){ return getNotation(false); }
+
+    /**
+     * Returns the stored message in Morse code notation or signal notation.
+     * @param   asSignalSequence    if true, returns the string in signal notation
+     * @return  String
+     */
     public String getNotation(boolean asSignalSequence){
         final String shortGap = asSignalSequence ? MorseNotation.SIGNAL_LETTER_GAP : MorseNotation.SHORT_GAP;
         final String longGap = asSignalSequence ? MorseNotation.SIGNAL_WORD_GAP : MorseNotation.LONG_GAP;
