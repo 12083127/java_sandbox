@@ -75,9 +75,10 @@ public class MorseCode {
     public String toString(){ return literals.toString();  }
 
     /**
-     * The '{@code Notation}' enum inside the '{@code MorseCode}' class contains most characters of the Morse alphabet, some
-     * Morse prosigns and punctuation characters. Every entry holds a representation of the character as a literal and
-     * the corresponding Morse code sequence.
+     * The '{@code Notation}' enum inside the '{@code MorseCode}' class contains most characters of the Morse alphabet,
+     * some Morse prosigns and punctuation characters. Every entry holds a representation of the character itself and
+     * the corresponding Morse code sequence. The enum also includes some entries for white space characters to
+     * distinguish between them more easily.
      */
     private enum MorseNotation {
         // literals
