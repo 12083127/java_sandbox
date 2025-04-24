@@ -51,7 +51,7 @@ public class MorseCode {
                     sb.append(longGap);
                     break;
                 case TAB:
-                    sb.append(longGap).append(longGap);
+                    sb.append(longGap).append(longGap).append(longGap);
                     break;
                 default:
                     if (MorseNotation.isWhiteSpace(current)){
