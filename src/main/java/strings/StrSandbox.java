@@ -106,6 +106,18 @@ public final class StrSandbox {
     }
 
     /**
+     * Returns all visible ASCII chars as a String.
+     * @return  String
+     */
+    public static String getASCII(){
+        StringBuilder sb = new StringBuilder();
+        for(int i = 32; i < 127; i++){
+            sb.append((char) i);
+        }
+        return sb.toString();
+    }
+
+    /**
      * Returns true if b is between 'A' and 'Z'.
      * @param b byte to check against
      * @return  boolean
