@@ -1,5 +1,9 @@
 package strings;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 import java.util.ArrayList;
 
 /**
@@ -215,6 +219,47 @@ public class MorseCode {
             sb.append("  ");
         }
         return sb.toString();
+    }
+
+    public void playSignal(int wordsPerMinute) { playSignal(wordsPerMinute, 800); }
+    public void playSignal(int wordsPerMinute, int beepFrequency){
+        int wpm = Math.abs(wordsPerMinute);
+        wpm = Math.max(2, Math.min(wpm, 50));
+        int bpm = Math.abs(beepFrequency);
+        bpm = Math.max(50, Math.min(bpm, 20000));
+
+
+        String signalStr = this.getNotation(true);
+        signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
+        final int delay = 1200 / wpm;
+        final int sampleRate = 16 * 1024;
+        final int length = signalStr.length() * delay;
+        final int samples = (length * sampleRate) / 1000;
+        final AudioFormat af = new AudioFormat(sampleRate, 8, 1, true, true);
+        byte[] toneBuffer  = new byte[Math.abs(samples)];
+        char[] signalChars = signalStr.toCharArray();
+
+        // generate waveform using signal string
+        for (int i = 0; i < toneBuffer.length; i++) {
+            int charIndex = i/(samples/signalStr.length());
+            char current = signalChars[Math.max(0, charIndex-1)];
+            int freq = current == MorseNotation.SIGNAL_MARK ? beepFrequency : 0;
+            double period = (double) sampleRate / freq;
+            double angle = 2.0 * Math.PI * i / period;
+            toneBuffer[i] = (byte) (Math.sin(angle) * 127f);
+        }
+
+        try {
+            SourceDataLine line = AudioSystem.getSourceDataLine(af);
+            line.open(af, sampleRate);
+            line.start();
+            line.write(toneBuffer, 0, toneBuffer.length);
+            line.drain();
+            line.close();
+
+        } catch (LineUnavailableException e) {
+            System.out.println(e.getLocalizedMessage());
+        }
     }
 
     @Override
