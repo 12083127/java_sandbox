@@ -184,6 +184,39 @@ public class MorseCode {
         return sb.toString();
     }
 
+    /**
+     * Returns a String of the Morse code using the phrases 'Dit' and 'Dah' for short and long signals respectively.
+     * @return String of dits and dahs
+     */
+    public String getSpokenNotation(){
+        final String shortBark = "Di";
+        final String longBark = "Dah";
+        boolean isNewWord = true;
+        StringBuilder sb = new StringBuilder();
+        for(MorseNotation mn : literals){
+            if(MorseNotation.isWhiteSpace(mn)) {
+                String gap = mn == MorseNotation.WHITE_SPACE ? MorseNotation.LONG_GAP : mn.sequence;
+                sb.append(gap);
+                isNewWord = true;
+                continue;
+            }
+            char[] chars = mn.sequence.toCharArray();
+            for(int i = 0; i < chars.length; i++){
+                char current = chars[i];
+                boolean isLastChar = i == chars.length - 1;
+                if (current == '.') {
+                    String diDit = isLastChar ? STR."\{shortBark.toLowerCase()}t" : shortBark.toLowerCase();
+                    sb.append(isNewWord ? shortBark : diDit);
+                }
+                if (current == '_') sb.append(isNewWord ? longBark : longBark.toLowerCase());
+                isNewWord = false;
+                sb.append(isLastChar? "" : "-");
+            }
+            sb.append("  ");
+        }
+        return sb.toString();
+    }
+
     @Override
     public String toString(){ return literals.toString();  }
 
