@@ -221,35 +221,89 @@ public class MorseCode {
         return sb.toString();
     }
 
+    /**
+     * Generates a waveform of the Morse code signal and will try to play it back using the computers sound system.
+     * This is a blocking method, so execution of the thread and any subsequent code will be halted until playback
+     * is finished.
+     * @param wordsPerMinute    determines signal playback speed. One word is equal to 5 signal letters. Clamped between
+     *                          1 and 50.
+     */
     public void playSignal(int wordsPerMinute) { playSignal(wordsPerMinute, 800); }
+
+    /**
+     * Generates a waveform of the Morse code signal and will try to play it back using the computers sound system.
+     * This is a blocking method, so execution of the thread and any subsequent code will be halted until playback
+     * is finished.
+     * @param wordsPerMinute    determines signal playback speed. One word is equal to 5 signal letters. Clamped between
+     *                          1 and 50.
+     * @param beepFrequency     determines the frequency of the beeping sound in hertz. Lower values get a lower
+     *                          bass like sound and higher values will generate a higher pitched beeping noise.
+     *                          Clamped between 50 and 20000 Hz
+     */
     public void playSignal(int wordsPerMinute, int beepFrequency){
         int wpm = Math.abs(wordsPerMinute);
-        wpm = Math.max(2, Math.min(wpm, 50));
-        int bpm = Math.abs(beepFrequency);
-        bpm = Math.max(50, Math.min(bpm, 20000));
-
+        wpm = Math.max(1, Math.min(wpm, 50));
+        int bFreq = Math.abs(beepFrequency);
+        bFreq = Math.max(50, Math.min(bFreq, 20000));
 
         String signalStr = this.getNotation(true);
         signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
+        String[] splits = signalStr.split(MorseNotation.SIGNAL_LETTER_GAP);
+
         final int delay = 1200 / wpm;
         final int sampleRate = 16 * 1024;
-        final int length = signalStr.length() * delay;
-        final int samples = (length * sampleRate) / 1000;
+        final double period = (double) sampleRate / bFreq;
         final AudioFormat af = new AudioFormat(sampleRate, 8, 1, true, true);
-        byte[] toneBuffer  = new byte[Math.abs(samples)];
-        char[] signalChars = signalStr.toCharArray();
-
-        // generate waveform using signal string
-        for (int i = 0; i < toneBuffer.length; i++) {
-            int charIndex = i/(samples/signalStr.length());
-            char current = signalChars[Math.max(0, charIndex-1)];
-            int freq = current == MorseNotation.SIGNAL_MARK ? beepFrequency : 0;
-            double period = (double) sampleRate / freq;
-            double angle = 2.0 * Math.PI * i / period;
-            toneBuffer[i] = (byte) (Math.sin(angle) * 127f);
-        }
 
         try {
+            // prepare to play audio
+            SourceDataLine line = AudioSystem.getSourceDataLine(af);
+            line.open(af, sampleRate);
+            line.start();
+
+            for (String split : splits){
+                long start = System.currentTimeMillis();
+
+                int pauseDelay = split.isEmpty() ?  (MorseNotation.SIGNAL_WORD_GAP.length() - 1) * delay :
+                                                    MorseNotation.SIGNAL_LETTER_GAP.length() * delay;
+
+                int expectedSignalLength = split.length() * delay;
+                int samples = (expectedSignalLength * sampleRate) / 1000;
+
+                byte[] toneBuffer  = new byte[samples];
+                char[] signalChars = split.toCharArray();
+
+                // generate waveform using signal string
+                for (int i = 0; i < toneBuffer.length; i++) {
+                    float charIndex = (float) i / samples * split.length();
+                    char current = signalChars[(int) charIndex];
+                    double angle = 2.0 * Math.PI * i / period;
+                    int volume = current == MorseNotation.SIGNAL_MARK ? 1 : 0;
+                    toneBuffer[i] = (byte) (Math.sin(angle) * 127f * volume);
+                }
+
+                // write tone buffer and play it
+                line.write(toneBuffer, 0, toneBuffer.length);
+                line.drain();
+
+                long end = System.currentTimeMillis();
+                long actualSignalLength = end - start;
+                long pauseTime = System.currentTimeMillis() + (expectedSignalLength - actualSignalLength) + pauseDelay;
+                // pause between letters and words
+                while(System.currentTimeMillis() < pauseTime){}
+
+//                System.out.format("%-20s\t\t\t played in %-4s/ %-4sms (actual/expected). Paused for %-4s/ %-4sms (actual/expected)\n"
+//                        ,split,actualSignalLength,expectedSignalLength,
+//                        (expectedSignalLength - actualSignalLength) + pauseDelay, pauseDelay);
+
+            }
+
+            line.close();
+        } catch (LineUnavailableException e) {
+            System.out.println(e.getLocalizedMessage());
+        }
+    }
+
             SourceDataLine line = AudioSystem.getSourceDataLine(af);
             line.open(af, sampleRate);
             line.start();
