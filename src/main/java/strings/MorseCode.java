@@ -241,10 +241,8 @@ public class MorseCode {
      *                          Clamped between 50 and 20000 Hz
      */
     public void playSignal(int wordsPerMinute, int beepFrequency){
-        int wpm = Math.abs(wordsPerMinute);
-        wpm = Math.max(1, Math.min(wpm, 50));
-        int bFreq = Math.abs(beepFrequency);
-        bFreq = Math.max(50, Math.min(bFreq, 20000));
+        int wpm = Math.max(1, Math.min(wordsPerMinute, 50));
+        int bFreq = Math.max(50, Math.min(beepFrequency, 20000));
 
         String signalStr = this.getNotation(true);
         signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
@@ -299,18 +297,6 @@ public class MorseCode {
             }
 
             line.close();
-        } catch (LineUnavailableException e) {
-            System.out.println(e.getLocalizedMessage());
-        }
-    }
-
-            SourceDataLine line = AudioSystem.getSourceDataLine(af);
-            line.open(af, sampleRate);
-            line.start();
-            line.write(toneBuffer, 0, toneBuffer.length);
-            line.drain();
-            line.close();
-
         } catch (LineUnavailableException e) {
             System.out.println(e.getLocalizedMessage());
         }
