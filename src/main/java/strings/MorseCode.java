@@ -158,34 +158,97 @@ public class MorseCode {
      */
     public String getNotation(boolean asSignalSequence){
         final String shortGap = asSignalSequence ? MorseNotation.SIGNAL_LETTER_GAP : MorseNotation.SHORT_GAP;
-        final String longGap = asSignalSequence ? MorseNotation.SIGNAL_WORD_GAP : MorseNotation.LONG_GAP;
 
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < literals.size(); i++){
             MorseNotation current = literals.get(i);
-            switch (current){
-                case WHITE_SPACE:
-                    sb.append(longGap);
-                    break;
-                case TAB:
-                    sb.append(longGap).append(longGap).append(longGap);
-                    break;
-                default:
-                    if (MorseNotation.isWhiteSpace(current)){
-                        sb.append(current.sequence);
-                        continue;
-                    }
-                    String sequence = MorseNotation.generateSequence(current.sequence, asSignalSequence);
-                    boolean isLastChar = i == literals.size() - 1;
-                    if (!isLastChar) {
-                        boolean isLastCharInWord = MorseNotation.isWhiteSpace(literals.get(i + 1));
-                        sb.append(isLastCharInWord ? sequence : STR."\{sequence}\{shortGap}");
-                    }
-                    else
-                        sb.append(sequence);
+            String sequence = getMorseString(current, false, asSignalSequence);
+
+            if (i == literals.size() - 1) {
+                sb.append(sequence);
+                break;
             }
+
+            boolean isWhiteSpace = MorseNotation.isWhiteSpace(current);
+            boolean isLastCharInWord = MorseNotation.isWhiteSpace(literals.get(i + 1));
+            sb.append(isLastCharInWord || isWhiteSpace ? sequence : STR."\{sequence}\{shortGap}");
         }
         return sb.toString();
+    }
+
+    /**
+     * Returns the stored message in both Morse code/signal notation and the clear Latin character above each Morse
+     * symbol.
+     * @return String
+     */
+    public String getStackedNotation() { return getStackedNotation(false); }
+
+    /**
+     * Returns the stored message in both Morse code/signal notation and the clear Latin character above each Morse
+     * symbol.
+     * @param asSignalSequence      if true, returns the Morse code string in signal notation
+     * @return  String
+     */
+    public String getStackedNotation(boolean asSignalSequence){
+        final String shortGap = asSignalSequence ? MorseNotation.SIGNAL_LETTER_GAP : MorseNotation.SHORT_GAP;
+        final String clearGap = asSignalSequence ? MorseNotation.LONG_GAP : shortGap;
+        final char separator = '—';
+
+        StringBuilder stacked = new StringBuilder();
+        StringBuilder morse = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
+        for(int i = 0; i < literals.size(); i++){
+            MorseNotation current = literals.get(i);
+            String sequence = getMorseString(current, false, asSignalSequence);
+            String character = getMorseString(current, true);
+            character = current == MorseNotation.TAB || current == MorseNotation.WHITE_SPACE ? " " : character;
+
+            int insertionIndex = (sequence.length() + character.length()) / 2;
+            for(int j = 0; j < sequence.length(); j++){
+                sb.append(j == insertionIndex - 1 ? character : Character.toString(separator));
+            }
+
+            if(i == literals.size() - 1){
+                morse.append(sequence);
+                stacked.append(sb);
+                break;
+            }
+
+            switch(current){
+                case NEWLINE, RETURN -> {
+                    stacked.append(character).append(morse).append("\n");
+                    morse.delete(0, morse.length());
+                    sb.delete(0, sb.length());
+                    continue;
+                }
+                case TAB, WHITE_SPACE -> character = sb.toString().replaceAll("\\S", " ");
+                default -> character = sb.toString();
+            }
+
+            boolean isWhiteSpace = MorseNotation.isWhiteSpace(current);
+            boolean isLastCharInWord = MorseNotation.isWhiteSpace(literals.get(i + 1));
+            morse.append(isLastCharInWord || isWhiteSpace ? sequence : STR."\{sequence}\{shortGap}");
+            stacked.append(isLastCharInWord || isWhiteSpace ? character : STR."\{character}\{clearGap}");
+
+            sb.delete(0, sb.length());
+        }
+        return stacked.append("\n").append(morse).toString();
+    }
+
+    private String getMorseString(MorseNotation character, boolean getCharacter) {
+        return getMorseString(character, getCharacter, false);
+    }
+
+    private String getMorseString(MorseNotation character, boolean getCharacter, boolean asSignalSequence){
+        final String longGap = asSignalSequence ? MorseNotation.SIGNAL_WORD_GAP : MorseNotation.LONG_GAP;
+        final String sequence = MorseNotation.generateSequence(character.sequence, asSignalSequence);
+        final String str = getCharacter ? character.literal : sequence;
+        return switch(character){
+            case NEWLINE, RETURN -> character.literal;
+            case WHITE_SPACE -> longGap;
+            case TAB -> STR."\{longGap}\{longGap}\{longGap}";
+            default -> str;
+        };
     }
 
     /**
