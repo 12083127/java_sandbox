@@ -342,9 +342,7 @@ public class MorseCode {
             // read buffer
             charBuffer.flip();
             char[] chars = new char[charBuffer.limit()];
-            for(int j = 0; charBuffer.hasRemaining(); j++) {
-                chars[j] = charBuffer.get();
-            }
+            charBuffer.get(chars, 0, charBuffer.limit());
 
             int length = chars.length * ditLength;
             int samples = (length * sampleRate) / 1000;
