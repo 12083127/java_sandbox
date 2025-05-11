@@ -4,12 +4,15 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.SourceDataLine;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 
 /**
  *
  */
 public class MorseCode {
+
+    private final static int DEFAULT_DIT_LENGTH = 1200;
 
     private ArrayList<MorseNotation> literals = new ArrayList<>();
 
@@ -306,21 +309,12 @@ public class MorseCode {
     public void playSignal(int wordsPerMinute, int beepFrequency){
         final int wpm = Math.max(1, Math.min(wordsPerMinute, 50));
         final int bFreq = Math.max(50, Math.min(beepFrequency, 20000));
-
-        String signalStr = this.getNotation(true);
-        signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
-
-        final int delay = 1200 / wpm;
         final int sampleRate = 16 * 1024;
-        final int maxBufferSize = 500 * 1024;
+        final int ditLength = DEFAULT_DIT_LENGTH / wpm;
+        final int maxBufferSize = Integer.MAX_VALUE / ditLength / sampleRate;
         final double period = (double) sampleRate / bFreq;
-        final float seconds = (float) delay / 1000;
-        final int samplesPerChar = (int) ((signalStr.length() * seconds) * sampleRate / signalStr.length());
-        final int maxCharsPerBuffer = maxBufferSize / samplesPerChar;
 
-        final String[] splits = splitSignalString(signalStr, maxCharsPerBuffer);
         final AudioFormat af = new AudioFormat(sampleRate, 8, 1, true, true);
-
         SourceDataLine line;
         try {
             // prepare to play audio
@@ -332,75 +326,46 @@ public class MorseCode {
             return;
         }
 
-        for (int i = 0; i < splits.length; i++){
-            long start = System.currentTimeMillis();
+        String signalStr = this.getNotation(true);
+        signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
 
-            int pauseDelay = MorseNotation.SIGNAL_LETTER_GAP.length() * delay;
+//        System.out.println(STR."Expected signal length: \{(float) signalStr.length() * ditLength / 1000} seconds.");
+//        System.out.println(STR."Buffer Size: \{maxBufferSize}");
 
-            int expectedSignalLength = splits[i].length() * delay;
-            int samples = (expectedSignalLength * sampleRate) / 1000;
+        CharBuffer charBuffer = CharBuffer.allocate(maxBufferSize);
+        char[] signalChars = signalStr.toCharArray();
+        for (int i = 0; i < signalChars.length; i++){
+            // write buffer
+            charBuffer.put(signalChars[i]);
+            if(charBuffer.hasRemaining() && i != signalChars.length - 1) continue;
 
-            byte[] toneBuffer  = new byte[samples];
-            char[] signalChars = splits[i].toCharArray();
+            // read buffer
+            charBuffer.flip();
+            char[] chars = new char[charBuffer.limit()];
+            for(int j = 0; charBuffer.hasRemaining(); j++) {
+                chars[j] = charBuffer.get();
+            }
+
+            int length = chars.length * ditLength;
+            int samples = (length * sampleRate) / 1000;
 
             // generate waveform using signal string
-            for (int j = 0; j < toneBuffer.length; j++) {
-                float charIndex = (float) j / samples * splits[i].length();
-                char current = signalChars[(int) charIndex];
+            byte[] buffer  = new byte[samples];
+            for (int j = 0; j < buffer.length; j++) {
+                float charIndex = (float) j / samples * chars.length;
+                char current = chars[(int) charIndex];
                 double angle = 2.0 * Math.PI * j / period;
                 int volume = current == MorseNotation.SIGNAL_MARK ? 1 : 0;
-                toneBuffer[j] = (byte) (Math.sin(angle) * 127f * volume);
+                buffer[j] = (byte) (Math.sin(angle) * 127f * volume);
             }
 
             // write tone buffer and play it
-            line.write(toneBuffer, 0, toneBuffer.length);
-            line.drain();
-
-            long end = System.currentTimeMillis();
-            long actualSignalLength = end - start;
-            long pauseTime = System.currentTimeMillis() + (expectedSignalLength - actualSignalLength) + pauseDelay;
-
-//            System.out.format("Split #%-3s played in %-4s / %-4sms (actual / expected).", i, actualSignalLength,
-//                    expectedSignalLength);
-
-            // pause between every processed signal string. Skip pausing, if we are on the last array element
-            if(i == splits.length - 1) break;
-            while(System.currentTimeMillis() < pauseTime){}
-
-//            System.out.format(" Paused for %-4s / %-4sms (actual / expected)\n",
-//                    (expectedSignalLength - actualSignalLength) + pauseDelay, pauseDelay);
+            line.write(buffer, 0, buffer.length);
+            charBuffer.clear();
         }
-
+        // wait until the remaining bytes have been drained and close line
+        line.drain();
         line.close();
-    }
-
-    private static String[] splitSignalString(String signal, int maxCharCount){
-        ArrayList<String> result = new ArrayList<>();
-        splitSignalStringHelper(signal, maxCharCount, result);
-        return result.toArray(new String[0]);
-    }
-
-    private static void splitSignalStringHelper(String signal, int maxCharCount, ArrayList<String> strArray){
-        if(signal.length() <= maxCharCount) {
-            strArray.add(signal);
-            return;
-        }
-
-        int nextIndex = maxCharCount;
-        String letterGap = MorseNotation.SIGNAL_LETTER_GAP;
-        String gapRegEx = STR."\{MorseNotation.SIGNAL_MARK}\{letterGap}";
-        while(nextIndex >= 0){
-            char current = signal.charAt(nextIndex);
-            String gapStr = signal.substring(nextIndex - letterGap.length(), nextIndex + 1);
-            boolean isLetterGap = current == MorseNotation.SIGNAL_GAP && gapStr.matches(gapRegEx);
-            if (isLetterGap) {
-                strArray.add(signal.substring(0, nextIndex - (letterGap.length() - 1)));
-                break;
-            }
-            nextIndex--;
-        }
-
-        splitSignalStringHelper(signal.substring(nextIndex + 1), maxCharCount, strArray);
     }
 
     @Override
