@@ -13,6 +13,7 @@ import java.util.ArrayList;
 public class MorseCode {
 
     private final static int DEFAULT_DIT_LENGTH = 1200;
+    private final static String LINE_SEPARATOR = System.lineSeparator();
 
     private ArrayList<MorseNotation> literals = new ArrayList<>();
 
@@ -21,6 +22,8 @@ public class MorseCode {
             System.out.println("\u001B[31m String object 'message' must not be null\u001B[0m");
             return;
         }
+
+        message = normalizeLineSeparators(message);
 
         for (char c : message.toCharArray()) {
             String toStr = Character.toString(c);
@@ -56,6 +59,8 @@ public class MorseCode {
             return "";
         }
 
+        morseCode = normalizeLineSeparators(morseCode);
+
         String firstChar = Character.toString(morseCode.trim().charAt(0));
         // check if the message is an actual Morse code
         String regEx =  STR."\{MorseNotation.SIGNAL_MARK}|\{MorseNotation.SIGNAL_GAP}|" +
@@ -75,7 +80,7 @@ public class MorseCode {
     }
 
     private static String decodeMorseString(String morseCode){
-        String splitRegEx = " |\r|\n";
+        String splitRegEx = STR." |\{LINE_SEPARATOR}";
         String[] splits = morseCode.splitWithDelimiters(splitRegEx, -1);
         StringBuilder sb = new StringBuilder();
         for(int i = 0; i < splits.length; i++) {
@@ -119,7 +124,7 @@ public class MorseCode {
     }
 
     private static String decodeSignalString(String morseCode){
-        String splitRegEx = STR."\{MorseNotation.SIGNAL_WORD_GAP}|\{MorseNotation.SIGNAL_LETTER_GAP}|\r|\n";
+        String splitRegEx = STR."\{MorseNotation.SIGNAL_WORD_GAP}|\{MorseNotation.SIGNAL_LETTER_GAP}|\{LINE_SEPARATOR}";
         String[] splits = morseCode.splitWithDelimiters(splitRegEx, -1);
         StringBuilder sb = new StringBuilder();
         for(String string : splits){
@@ -130,7 +135,7 @@ public class MorseCode {
                 continue;
             }
 
-            if(string.matches("\r|\n")){
+            if(string.matches("[\r\n]")){
                 sb.append(string);
                 continue;
             }
@@ -218,8 +223,10 @@ public class MorseCode {
             }
 
             switch(current){
-                case NEWLINE, RETURN -> {
-                    stacked.append(character).append(morse).append("\n");
+                // TODO check potential Windows line separator issues
+                case RETURN -> { continue; }
+                case NEWLINE -> {
+                    stacked.append(character).append(morse).append(LINE_SEPARATOR);
                     morse.delete(0, morse.length());
                     sb.delete(0, sb.length());
                     continue;
@@ -235,7 +242,7 @@ public class MorseCode {
 
             sb.delete(0, sb.length());
         }
-        return stacked.append("\n").append(morse).toString();
+        return stacked.append(LINE_SEPARATOR).append(morse).toString();
     }
 
     private String getMorseString(MorseNotation character, boolean getCharacter) {
@@ -327,7 +334,7 @@ public class MorseCode {
         }
 
         String signalStr = this.getNotation(true);
-        signalStr = signalStr.replaceAll("\r|\n", MorseNotation.SIGNAL_WORD_GAP);
+        signalStr = signalStr.replaceAll(LINE_SEPARATOR, MorseNotation.SIGNAL_WORD_GAP);
 
 //        System.out.println(STR."Expected signal length: \{(float) signalStr.length() * ditLength / 1000} seconds.");
 //        System.out.println(STR."Buffer Size: \{maxBufferSize}");
@@ -368,6 +375,8 @@ public class MorseCode {
 
     @Override
     public String toString(){ return literals.toString();  }
+
+    private static String normalizeLineSeparators(String str){ return str.replaceAll("\\r\\n|\\r|\\n", LINE_SEPARATOR); }
 
     /**
      * The '{@code Notation}' enum inside the '{@code MorseCode}' class contains most characters of the Morse alphabet,
