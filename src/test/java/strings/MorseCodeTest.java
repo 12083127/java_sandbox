@@ -112,7 +112,9 @@ class MorseCodeTest {
     @org.junit.jupiter.api.Test
     void decodeMorseSequenceOfSingleChars() {
         for(Map.Entry<String, String> e : sequences.entrySet()){
-            assertEquals(e.getKey(), MorseCode.decode(e.getValue()));
+            String value = e.getValue();
+            String decoded = MorseCode.decode(e.getValue());
+            assertEquals(value.matches("\\s++") ? "" : clearChars.get(e.getKey()), decoded);
             System.out.print(STR."\{e.getKey()}, ");
         }
     }
