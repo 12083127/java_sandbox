@@ -59,10 +59,14 @@ public class MorseCode {
             return "";
         }
 
-        morseCode = normalizeLineSeparators(morseCode);
+        // sanitize string for decoding
+        morseCode = normalizeLineSeparators(morseCode).trim();
+        if(morseCode.isEmpty()){
+            return "";
+        }
 
-        String firstChar = Character.toString(morseCode.trim().charAt(0));
         // check if the message is an actual Morse code
+        String firstChar = Character.toString(morseCode.charAt(0));
         String regEx =  STR."\{MorseNotation.SIGNAL_MARK}|\{MorseNotation.SIGNAL_GAP}|" +
                         STR."\{MorseNotation.SHORT_MARK}|\{MorseNotation.LONG_MARK}";
         boolean isMorseCode = firstChar.matches(regEx);
