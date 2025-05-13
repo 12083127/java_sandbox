@@ -1,10 +1,9 @@
 package strings;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.*;
+import java.io.*;
 import java.nio.CharBuffer;
+import java.nio.file.Path;
 import java.util.ArrayList;
 
 /**
@@ -12,8 +11,9 @@ import java.util.ArrayList;
  */
 public class MorseCode {
 
-    private final static int DEFAULT_DIT_LENGTH = 1200;
+    private final static int SAMPLE_RATE = 16 * 1024;
     private final static String LINE_SEPARATOR = System.lineSeparator();
+    private final static AudioFormat audioFormat = new AudioFormat(SAMPLE_RATE, 8, 1, true, true);;
 
     private ArrayList<MorseNotation> literals = new ArrayList<>();
 
@@ -298,6 +298,52 @@ public class MorseCode {
         return sb.toString();
     }
 
+    private ArrayList<byte[]> getAudioData(int wordsPerMinute , int beepFrequency){
+        ArrayList<byte[]> audioData = new ArrayList<>();
+
+        final int defaultDitLength = 1200;
+        final int wpm = Math.max(1, Math.min(wordsPerMinute, 50));
+        final int bFreq = Math.max(50, Math.min(beepFrequency, 20000));
+        final int ditLength = defaultDitLength / wpm;
+        final int maxBufferSize = Integer.MAX_VALUE / ditLength / SAMPLE_RATE;
+        final double period = (double) SAMPLE_RATE / bFreq;
+
+        String signalStr = this.getNotation(true);
+        signalStr = signalStr.replaceAll(LINE_SEPARATOR, MorseNotation.SIGNAL_WORD_GAP);
+
+//        System.out.println(STR."Expected signal length: \{(float) signalStr.length() * ditLength / 1000} seconds.");
+//        System.out.println(STR."Buffer Size: \{maxBufferSize}");
+
+        CharBuffer charBuffer = CharBuffer.allocate(maxBufferSize);
+        char[] signalChars = signalStr.toCharArray();
+        for (int i = 0; i < signalChars.length; i++) {
+            // write buffer
+            charBuffer.put(signalChars[i]);
+            if (charBuffer.hasRemaining() && i != signalChars.length - 1) continue;
+
+            // read buffer
+            charBuffer.flip();
+            char[] chars = new char[charBuffer.limit()];
+            charBuffer.get(chars, 0, charBuffer.limit());
+
+            int length = chars.length * ditLength;
+            int samples = (length * SAMPLE_RATE) / 1000;
+
+            // generate waveform using signal string
+            byte[] buffer = new byte[samples];
+            for (int j = 0; j < buffer.length; j++) {
+                float charIndex = (float) j / samples * chars.length;
+                char current = chars[(int) charIndex];
+                double angle = 2.0 * Math.PI * j / period;
+                int volume = current == MorseNotation.SIGNAL_MARK ? 1 : 0;
+                buffer[j] = (byte) (Math.sin(angle) * 127f * volume);
+            }
+            audioData.add(buffer);
+            charBuffer.clear();
+        }
+        return audioData;
+    }
+
     /**
      * Generates a waveform of the Morse code signal and will try to play it back using the computers sound system.
      * This is a blocking method, so execution of the thread and any subsequent code will be halted until playback
@@ -317,64 +363,54 @@ public class MorseCode {
      *                          bass like sound and higher values will generate a higher pitched beeping noise.
      *                          Clamped between 50 and 20000 Hz
      */
-    public void playSignal(int wordsPerMinute, int beepFrequency){
-        final int wpm = Math.max(1, Math.min(wordsPerMinute, 50));
-        final int bFreq = Math.max(50, Math.min(beepFrequency, 20000));
-        final int sampleRate = 16 * 1024;
-        final int ditLength = DEFAULT_DIT_LENGTH / wpm;
-        final int maxBufferSize = Integer.MAX_VALUE / ditLength / sampleRate;
-        final double period = (double) sampleRate / bFreq;
-
-        final AudioFormat af = new AudioFormat(sampleRate, 8, 1, true, true);
+    public void playSignal(int wordsPerMinute , int beepFrequency){
         SourceDataLine line;
         try {
             // prepare to play audio
-            line = AudioSystem.getSourceDataLine(af);
-            line.open(af, sampleRate);
+            line = AudioSystem.getSourceDataLine(audioFormat);
+            line.open(audioFormat, SAMPLE_RATE);
             line.start();
         } catch (LineUnavailableException e) {
             System.out.println(e.getLocalizedMessage());
             return;
         }
 
-        String signalStr = this.getNotation(true);
-        signalStr = signalStr.replaceAll(LINE_SEPARATOR, MorseNotation.SIGNAL_WORD_GAP);
-
-//        System.out.println(STR."Expected signal length: \{(float) signalStr.length() * ditLength / 1000} seconds.");
-//        System.out.println(STR."Buffer Size: \{maxBufferSize}");
-
-        CharBuffer charBuffer = CharBuffer.allocate(maxBufferSize);
-        char[] signalChars = signalStr.toCharArray();
-        for (int i = 0; i < signalChars.length; i++){
-            // write buffer
-            charBuffer.put(signalChars[i]);
-            if(charBuffer.hasRemaining() && i != signalChars.length - 1) continue;
-
-            // read buffer
-            charBuffer.flip();
-            char[] chars = new char[charBuffer.limit()];
-            charBuffer.get(chars, 0, charBuffer.limit());
-
-            int length = chars.length * ditLength;
-            int samples = (length * sampleRate) / 1000;
-
-            // generate waveform using signal string
-            byte[] buffer  = new byte[samples];
-            for (int j = 0; j < buffer.length; j++) {
-                float charIndex = (float) j / samples * chars.length;
-                char current = chars[(int) charIndex];
-                double angle = 2.0 * Math.PI * j / period;
-                int volume = current == MorseNotation.SIGNAL_MARK ? 1 : 0;
-                buffer[j] = (byte) (Math.sin(angle) * 127f * volume);
-            }
-
-            // write tone buffer and play it
+        for(byte[] buffer : getAudioData(wordsPerMinute, beepFrequency)){
             line.write(buffer, 0, buffer.length);
-            charBuffer.clear();
         }
         // wait until the remaining bytes have been drained and close line
         line.drain();
         line.close();
+    }
+
+    public void saveSignal(Path filePath, AudioFileFormat.Type fileFormat, int wordsPerMinute,
+                           int beepFrequency) throws IOException {
+        File file = filePath.toFile();
+        if (file.isDirectory()) {
+            System.out.println(STR."\u001B[31mCan not write file:\{file.toString()}\u001B[0m");
+            return;
+        }
+
+        ArrayList<byte[]> audioData = getAudioData(wordsPerMinute, beepFrequency);
+        int arraySize = audioData.stream().map(bytes -> bytes.length).reduce(0, Integer::sum);
+
+        int i = 0;
+        byte[] buffer = new byte[arraySize];
+        while(i < arraySize) {
+            for (byte[] b : audioData) {
+                for (byte value : b) {
+                    buffer[i++] = value;
+                }
+            }
+        }
+
+        final ByteArrayInputStream bais = new ByteArrayInputStream(buffer);
+        final AudioInputStream ais = new AudioInputStream(bais, audioFormat, buffer.length);
+
+        AudioSystem.write(ais, fileFormat, file);
+
+        bais.close();
+        ais.close();
     }
 
     @Override
