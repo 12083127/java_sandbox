@@ -19,12 +19,11 @@ public class MorseCode {
 
     public MorseCode(String message) {
         if (message == null) {
-            System.out.println("\u001B[31m String object 'message' must not be null\u001B[0m");
-            return;
+            throw new IllegalArgumentException("\u001B[31m'message' must not be null\u001B[0m");
         }
 
         message = normalizeLineSeparators(message);
-
+        // TODO handle proper recognition of 'CH' and 'ß'
         for (char c : message.toCharArray()) {
             String toStr = Character.toString(c);
             MorseNotation mn = MorseNotation.search(toStr, true);
