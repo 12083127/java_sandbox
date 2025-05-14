@@ -273,7 +273,8 @@ public class MorseCode {
         final String longBark = "Dah";
         boolean isNewWord = true;
         StringBuilder sb = new StringBuilder();
-        for(MorseNotation mn : literals){
+        for(int i = 0; i < literals.size(); i++){
+            MorseNotation mn = literals.get(i);
             if(MorseNotation.isWhiteSpace(mn)) {
                 String gap = mn == MorseNotation.WHITE_SPACE ? MorseNotation.LONG_GAP : mn.sequence;
                 sb.append(gap);
@@ -281,9 +282,9 @@ public class MorseCode {
                 continue;
             }
             char[] chars = mn.sequence.toCharArray();
-            for(int i = 0; i < chars.length; i++){
-                char current = chars[i];
-                boolean isLastChar = i == chars.length - 1;
+            for(int j = 0; j < chars.length; j++){
+                char current = chars[j];
+                boolean isLastChar = j == chars.length - 1;
                 if (current == '.') {
                     String diDit = isLastChar ? STR."\{shortBark.toLowerCase()}t" : shortBark.toLowerCase();
                     sb.append(isNewWord ? shortBark : diDit);
@@ -292,7 +293,7 @@ public class MorseCode {
                 isNewWord = false;
                 sb.append(isLastChar? "" : "-");
             }
-            sb.append("  ");
+            sb.append(i == literals.size() - 1? "" : "   ");
         }
         return sb.toString();
     }
