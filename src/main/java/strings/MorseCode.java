@@ -476,6 +476,9 @@ public class MorseCode {
         }
 
         private static MorseNotation search(String searchStr, boolean lookForLiteral) {
+            if(searchStr.equals("ß")){
+                return MorseNotation.SZ;
+            }
             for (MorseNotation mn : MorseNotation.values()) {
                 boolean isValidNotation = lookForLiteral ?  searchStr.toUpperCase().equals(mn.literal):
                                                             searchStr.equals(mn.sequence);
