@@ -5,6 +5,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvFileSource;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.Locale;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class MorseCodeTest {
@@ -65,7 +67,8 @@ class MorseCodeTest {
     @CsvSource(ignoreLeadingAndTrailingWhitespace = false, value = {"'\n', ", "\r, ", "\t,         "})
     @CsvFileSource(resources = "/testdata_get_sequence_of_single_chars.csv")
     void getMorseSequenceOfSingleChars(String key, String value) {
-        MorseCode mc = new MorseCode(key);
+        Locale language = key.matches("CH")? Locale.GERMAN : Locale.ENGLISH;
+        MorseCode mc = new MorseCode(key, language);
         assertEquals(key.matches("[\r\n]") ? System.lineSeparator() : value, mc.getNotation());
     }
 
@@ -84,7 +87,8 @@ class MorseCodeTest {
     @CsvSource(ignoreLeadingAndTrailingWhitespace = false, value = {"'\n', ", "\r, ", "\t,˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽˽"})
     @CsvFileSource(resources = "/testdata_get_signal_sequence_of_single_chars.csv")
     void getSignalSequenceOfSingleChars(String key, String value) {
-        MorseCode mc = new MorseCode(key);
+        Locale language = key.matches("CH")? Locale.GERMAN : Locale.ENGLISH;
+        MorseCode mc = new MorseCode(key, language);
         assertEquals(key.matches("[\r\n]") ? System.lineSeparator() : value, mc.getNotation(true));
     }
 
@@ -110,7 +114,8 @@ class MorseCodeTest {
     @CsvSource(ignoreLeadingAndTrailingWhitespace = false, value = {"'\n','\n'", "'\r','\r'", "\t,\t"})
     @CsvFileSource(resources = "/testdata_get_spoken_notation_of_single_chars.csv")
     void getSpokenNotationOfSingleChars(String key, String value) {
-        MorseCode mc = new MorseCode(key);
+        Locale language = key.matches("CH")? Locale.GERMAN : Locale.ENGLISH;
+        MorseCode mc = new MorseCode(key, language);
         assertEquals(key.matches("[\r\n]") ? System.lineSeparator() : value, mc.getSpokenNotation());
     }
 

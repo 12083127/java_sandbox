@@ -5,6 +5,7 @@ import java.io.*;
 import java.nio.CharBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  *
@@ -18,18 +19,33 @@ public class MorseCode {
     private ArrayList<MorseNotation> literals = new ArrayList<>();
 
     public MorseCode(String message) {
+        // TODO automatically recognize string language
+        this(message, Locale.ENGLISH);
+    }
+    public MorseCode(String message, Locale language) throws IllegalArgumentException{
         if (message == null) {
             throw new IllegalArgumentException("\u001B[31m'message' must not be null\u001B[0m");
         }
 
         message = normalizeLineSeparators(message);
-        // TODO handle proper recognition of 'CH' and 'ß'
-        for (char c : message.toCharArray()) {
-            String toStr = Character.toString(c);
-            MorseNotation mn = MorseNotation.search(toStr, true);
+
+        char[] chars = message.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            String currentChar = Character.toString(chars[i]);
+
+            boolean isCH = (language.equals(Locale.GERMANY) || language.equals(Locale.GERMAN)) &&
+                            currentChar.matches("[Cc]") && i != chars.length - 1 &&
+                            Character.toString(chars[i + 1]).matches("[Hh]");
+
+            if(isCH) {
+                currentChar = "ch";
+                i++;
+            }
+
+            MorseNotation mn = MorseNotation.search(currentChar, true);
 
             if (!MorseNotation.isValid(mn)) {
-                System.out.println(STR."\u001B[33m No valid Morse code available for character '\{c}'\u001B[0m");
+                System.out.println(STR."\u001B[33m No valid Morse code available for character '\{currentChar}'\u001B[0m");
             }
             literals.add(mn);
         }
@@ -214,8 +230,9 @@ public class MorseCode {
             String character = getMorseString(current, true);
             character = current == MorseNotation.TAB || current == MorseNotation.WHITE_SPACE ? " " : character;
 
-            int insertionIndex = (sequence.length() + character.length()) / 2;
-            for(int j = 0; j < sequence.length(); j++){
+            int length = current.equals(MorseNotation.CH)? sequence.length() - 1 : sequence.length();
+            int insertionIndex = (length + character.length()) / 2;
+            for(int j = 0; j < length; j++){
                 sb.append(j == insertionIndex - 1 ? character : Character.toString(separator));
             }
 
